@@ -58,7 +58,7 @@ vivos-tracker/
 ### Phase 0: Setup & Foundation ✅
 - [x] Project structure created
 - [x] Basic file skeletons in place
-- [ ] Git repository initialized
+- [x] Git repository initialized
 - [x] Icons created and added
 
 ### Phase 1: Core Timer & Data Logging

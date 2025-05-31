@@ -1,0 +1,89 @@
+body {
+
+    /* margin: 1vh 1vw; */
+    background-color: black;
+    color: azure;
+    font-family: monospace;
+
+
+    /* font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; */
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 1rem;
+    text-align: center;
+}
+
+.title {
+    font-family: monospace;
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.stopwatch {
+    background: #373839;
+    padding: 0.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.timer-display {
+    font-size: 3rem;
+    font-weight: bold;
+    color: azure;
+    margin: 1rem 0 1rem 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 1.5rem 3rem;
+    font-size: 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 1rem 0.5rem 1rem 0.5rem;
+}
+
+.btn:hover {
+    background: #0056b3;
+}
+
+.btn.stop {
+    background: #dc3545;
+}
+
+.btn.stop:hover {
+    background: #c82333;
+}
+
+.btn.reset {
+    background: #6c757d;
+}
+
+.btn.reset:hover {
+    background: #545b62;
+}
+
+.status {
+    margin-top: 1rem;
+    padding: 0.5rem;
+    background: #e9ecef;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+/* #flexbox { */
+/* Center Align Horizontally the elements in the viewport */
+/* display: flex; */
+/* flex-direction: column; */
+/* align-items: center;  */
+/* Reduce vertical space between elements */
+/* gap: 1ch; */
+/* Center Align Vertically the elements in the viewport */
+/* height: 60vh;
+    justify-content: center; */
+
+/* } */

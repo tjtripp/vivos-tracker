@@ -9,16 +9,19 @@ const STORAGE_KEYS = {
     isRunning: 'stopwatch_isRunning',
     currentStartTime: 'stopwatch_currentStartTime',
     accumulatedTime: 'stopwatch_accumulatedTime',
-    todaysDate: 'stopwatch_todaysDate'
+    todaysDate: 'stopwatch_todaysDate',
+    allRecords: 'stopwatch_allRecords'
 }
 
 
 // State variables
-let currentstartTime = null;
+let currentStartTime = null;
+let currentEndTime = null;
 let isRunning = false;
 let accumulatedTime = 0; // Total time today in milliseconds
 let intervalId = null;
 let displayUpdateInterval = 1000; // Update every 100 ms
+let allRecords = []; // Store all records
 
 /**
 * Get today's date as a string (YYYY-MM-DD format)
@@ -37,6 +40,8 @@ function saveState() {
         localStorage.setItem(STORAGE_KEYS.currentStartTime, currentStartTime || '');
         localStorage.setItem(STORAGE_KEYS.accumulatedTime, accumulatedTime);
         localStorage.setItem(STORAGE_KEYS.todaysDate, getTodaysDate());
+        localStorage.setItem(STORAGE_KEYS.allRecords, JSON.stringify(allRecords));
+
         console.log('💾 State saved to localStorage');
     } catch (error) {
         console.warn('⚠️ Could not save to localStorage:', error);
@@ -56,8 +61,9 @@ function loadState() {
         // If it's a new day, reset accumulated time
         if (savedDate !== todaysDate) {
             console.log('🌅 New day detected - resetting daily accumulated time');
+        // if timer is running then end session at midnight and start a new one
             accumulatedTime = 0;
-            currentStartTime = null;
+            currentStartTime = null;  // this should be midnight 12 am
             isRunning = false;
             saveState(); // Save the reset state
             return;
@@ -198,13 +204,31 @@ function startStopwatch() {
 function stopStopwatch() {
     if (!isRunning || !currentStartTime) return;
 
+    // Get the end time of the current session
+    currentEndTime = Date.now();
+
     // Calculate the session time and add to accumulated
-    const sessionTime = Date.now() - currentStartTime;
+    const sessionTime = currentEndTime - currentStartTime;
     accumulatedTime += sessionTime;
+
+    // Save and update the allRecords with each session
+    allRecords = localStorage.getItem(STORAGE_KEYS.allRecords);
+    if (!allRecords) {
+        allRecords = [];
+    } else {
+        allRecords = JSON.parse(allRecords);
+        allRecords.push({
+            sessionTime: sessionTime,
+            startTime: new Date(currentStartTime).getTime(),
+            endTime: new Date(currentEndTime).getTime()
+        });
+    }
+
 
     // Clear running state
     isRunning = false;
     currentStartTime = null;
+    currentEndTime = null;
 
     // Stop the interval
     if (intervalId) {
@@ -322,3 +346,7 @@ console.log('✅ Stopwatch ready! Space = start/stop, R = reset');
 // have a stats display that shows metrics with an advanced view for more detailed stats
 // have a message display that shows the last actions, scrollable, consider storing as message history later
 // actions can be started at, stopped at, saved at, something like that
+// Feature: Handle timezones in allRecords
+// Prevent double click zoom
+// Allow allRecords to persist across sessions and refreshes
+

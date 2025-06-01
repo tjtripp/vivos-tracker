@@ -1,7 +1,7 @@
 {
     "name": "Vivos Wear Tracker",
     "short_name": "VivosTrack",
-    "description": "A Progressive Web App to track Vivos dental appliance wear time.",
+    "description": "A Progressive Web App to track dental appliance wear time.",
     "start_url": "/index.html",
     "display": "standalone",
     "background_color": "#ffffff",

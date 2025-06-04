@@ -1,3 +1,6 @@
+# Dev Notes WIP
+ - after install doesns't load from shortcut icon
+
 # Vivos DNA Device Tracking PWA
 
 A Progressive Web App (PWA) to track wear time for a Vivos dental appliance.

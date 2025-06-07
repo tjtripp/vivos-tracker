@@ -1,9 +1,15 @@
-# Dev Notes WIP
- - after install doesns't load from shortcut icon
-
 # Vivos DNA Device Tracking PWA
 
 A Progressive Web App (PWA) to track wear time for a Vivos dental appliance.
+
+# Hosted on GitHub Pages (public):
+https://tjtripp.github.io/vivos-tracker/
+
+## Dev Notes for WIP
+ - after install doesn't load from shortcut icon
+ - diagram states/flow
+ - switch to indexedDB for data storage
+ - how to 'approximate' widget like functionality
 
 ## Project Overview
 
@@ -24,7 +30,9 @@ This PWA helps users track their Vivos dental appliance wear time with:
 - [ ] Mobile-responsive design
 - [ ] PWA installation capability
 
+
 ### Enhanced Features (Phase 4-6)
+- [ ] Widget-like functionality (home screen icon)
 - [ ] Weekly statistics and visualization
 - [ ] Data export functionality
 - [ ] Wear streak tracking
@@ -123,6 +131,14 @@ The app uses localStorage with these key structures:
 - `vivosStartTime`: ISO string of current session start time
 - `vivosHistory`: JSON array of completed wear sessions
 - `isWearing`: Boolean string indicating current wear status
+
+## Widget Approximation
+PWAs don't have access to android apis for widget. 
+Options:
+- when opening from home screen icon toggle the start/stop state
+- setup a service worker to run in the background and update a badge or notification with a button to toggle the state
+- Can a PWA icon have icon short cuts like long press, swipe up/down like what nova launcher does?
+
 
 ## Browser Support
 

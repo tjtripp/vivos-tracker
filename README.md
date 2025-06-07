@@ -3,13 +3,14 @@
 A Progressive Web App (PWA) to track wear time for a Vivos dental appliance.
 
 # Hosted on GitHub Pages (public):
-https://tjtripp.github.io/vivos-tracker/
+- https://tjtripp.github.io/vivos-tracker/
+- If installed to home screen, reinstall the PWA after changes to see updates
 
 ## Dev Notes for WIP
- - after install doesn't load from shortcut icon
  - diagram states/flow
  - switch to indexedDB for data storage
  - how to 'approximate' widget like functionality
+ - [draw.io state diagram](https://app.diagrams.net/#G1LjmWIHFGbhOBomOCT9AVQclbQzsn2rxd#%7B%22pageId%22%3A%22fl5VHqQaEs4XxcpcWQLl%22%7D) (currently private but after cleanup can be public)
 
 ## Project Overview
 
@@ -23,12 +24,12 @@ This PWA helps users track their Vivos dental appliance wear time with:
 ## Features
 
 ### Core Features (Phase 1-3)
-- [ ] Start/Stop timer for wear sessions
+- [x] Start/Stop timer for wear sessions
 - [ ] Daily wear time tracking
 - [ ] Session history storage
 - [ ] Offline functionality
 - [ ] Mobile-responsive design
-- [ ] PWA installation capability
+- [x] PWA installation capability
 
 
 ### Enhanced Features (Phase 4-6)
@@ -73,16 +74,16 @@ vivos-tracker/
 - [x] Icons created and added
 
 ### Phase 1: Core Timer & Data Logging
-- [ ] Implement start/stop timer functionality
-- [ ] Add localStorage for session persistence
-- [ ] Create basic UI for timer controls
+- [x] Implement start/stop timer functionality
+- [x] Add localStorage for session persistence
+- [x] Create basic UI for timer controls
 - [ ] Handle page refresh/reload scenarios
 
 ### Phase 2: Basic Reporting & PWA Shell
 - [ ] Display daily total wear time
 - [ ] Show wear session history
 - [ ] Implement service worker caching
-- [ ] Make app installable as PWA
+- [x] Make app installable as PWA
 
 ### Phase 3: UI/UX Refinement & Testing
 - [ ] Enhanced CSS styling
@@ -99,6 +100,7 @@ vivos-tracker/
 - [ ] Data export functionality (JSON/CSV)
 - [ ] Optional reminder notifications
 - [ ] Data backup/restore features
+- [ ] Handle updating PWA after changes
 
 ### Phase 6: Advanced Tracking & Optimization
 - [ ] Streak tracking implementation
@@ -135,9 +137,9 @@ The app uses localStorage with these key structures:
 ## Widget Approximation
 PWAs don't have access to android apis for widget. 
 Options:
-- when opening from home screen icon toggle the start/stop state
-- setup a service worker to run in the background and update a badge or notification with a button to toggle the state
-- Can a PWA icon have icon short cuts like long press, swipe up/down like what nova launcher does?
+- [A PWA icon can have long press shortcuts](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/shortcuts) to features
+- when opening from home screen icon toggle the start/stop state?
+- setup a service worker to run in the background and update a badge or notification with a button to toggle the state?
 
 
 ## Browser Support

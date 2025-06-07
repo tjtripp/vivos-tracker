@@ -23,6 +23,36 @@ let intervalId = null;
 let displayUpdateInterval = 1000; // Update every 100 ms
 let allRecords = []; // Store all records
 
+
+
+
+// ==========================================================================
+// Core Timer Functions
+// ==========================================================================
+// ==========================================================================
+// Data Management Functions
+// ==========================================================================
+// ==========================================================================
+// UI Update Functions
+// ==========================================================================
+// ==========================================================================
+// Utility Functions
+// ==========================================================================
+// ==========================================================================
+// Error Handling
+// ==========================================================================
+// ==========================================================================
+// Service Worker Registration
+// ==========================================================================
+// ==========================================================================
+// Page Visibility Handling
+// ==========================================================================
+// ==========================================================================
+// Event Listeners Setup
+// ==========================================================================
+
+
+
 /**
 * Get today's date as a string (YYYY-MM-DD format)
 * @returns {string} today's date
@@ -329,12 +359,26 @@ document.addEventListener('keydown', function (event) {
     }
 });
 
-// Initialize the app
-console.log('🚀 Persistent Stopwatch loading...');
-loadState();
-updateButtonState();
-updateDisplay();
-console.log('✅ Stopwatch ready! Space = start/stop, R = reset');
+
+// ==========================================================================
+// Application Initialization
+// ==========================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Persistent Stopwatch loading...');    
+    // Get DOM element references
+    // Initialize event listeners
+    // Load saved state from localStorage
+    loadState();
+    updateButtonState();
+    updateDisplay();
+    // Register service worker
+    // Set up page visibility handling
+    console.log('✅ Stopwatch ready! Space = start/stop, R = reset');
+});
+
+
+
+
 
 // Initialize the timer variable
 // startTimer function - records the start time in unix time and updates the display each second. if something happens to the app we can use the saved start time to pick up where we left off start/stop event. How to handle crashes/missing stops?

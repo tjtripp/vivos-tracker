@@ -1,9 +1,3 @@
-// Get DOM elements
-const timerDisplay = document.querySelector('#timerDisplay');
-const startStopBtn = document.querySelector('#startStopBtn');
-const resetBtn = document.querySelector('#resetBtn');
-const statusDisplay = document.querySelector('#statusDisplay');
-
 // Storage keys - keeping time consistent across sessions
 const STORAGE_KEYS = {
     isRunning: 'stopwatch_isRunning',
@@ -12,7 +6,6 @@ const STORAGE_KEYS = {
     todaysDate: 'stopwatch_todaysDate',
     allRecords: 'stopwatch_allRecords'
 }
-
 
 // State variables
 let currentStartTime = null;
@@ -23,44 +16,175 @@ let intervalId = null;
 let displayUpdateInterval = 1000; // Update every 100 ms
 let allRecords = []; // Store all records
 
+// DOM element references - declare globally but initialize after DOM loads
+let timerDisplay;
+let statusDisplay;
+let startStopBtn;
 
+// ==========================================================================
+// Application Initialization
+// ==========================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Persistent Stopwatch loading...');    
+
+    // Get DOM element references
+    timerDisplay = document.querySelector('#timerDisplay');
+    startStopBtn = document.querySelector('#startStopBtn');
+    statusDisplay = document.querySelector('#statusDisplay');
+
+    // ======================================================================
+    // Event Listeners Setup
+    // ======================================================================
+    
+    startStopBtn.addEventListener("click", handleStartStop);
+    
+    // Optional: Keyboard support
+    document.addEventListener('keydown', function (event) {
+        if (event.code === 'Space') {
+            event.preventDefault();
+            handleStartStop();
+        } else if (event.code === 'KeyR') {
+            event.preventDefault();
+            resetStopwatch();
+        }
+    });
+
+    // TODO: This is not  fully understood/implemented
+    // Handle page visibility changes (mobile apps, tab switching)
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // TODO: This is not  fully understood/implemented
+    // Save state when page is about to unload
+    window.addEventListener('beforeunload', () => {
+        if (isRunning) {
+            saveState();
+            console.log('💾 Saving state before page unload');
+        }
+    });
+
+    loadState();
+
+    updateButtonState();
+
+    updateDisplay();
+
+    // TODO: Register service worker
+
+    console.log('✅ Stopwatch ready! Space = start/stop');
+});
 
 
 // ==========================================================================
 // Core Timer Functions
 // ==========================================================================
-// ==========================================================================
-// Data Management Functions
-// ==========================================================================
-// ==========================================================================
-// UI Update Functions
-// ==========================================================================
-// ==========================================================================
-// Utility Functions
-// ==========================================================================
-// ==========================================================================
-// Error Handling
-// ==========================================================================
-// ==========================================================================
-// Service Worker Registration
-// ==========================================================================
-// ==========================================================================
-// Page Visibility Handling
-// ==========================================================================
-// ==========================================================================
-// Event Listeners Setup
-// ==========================================================================
+/**
+     * Start the stopwatch
+     */
+function startStopwatch() {
+    currentStartTime = Date.now();
+    isRunning = true;
 
+    updateButtonState();
+    startInterval();
+    saveState(); // Persist the start immediately
+
+    console.log('⏱️ Stopwatch started');
+}
+
+/**
+ * Stop the stopwatch and accumulate the time
+ */
+function stopStopwatch() {
+    if (!isRunning || !currentStartTime) return;
+
+    // Get the end time of the current session
+    currentEndTime = Date.now();
+    const sessionTime = currentEndTime - currentStartTime;
+    accumulatedTime += sessionTime;
+
+    // Save and update the allRecords with each session
+    try {
+        const storedRecords = localStorage.getItem(STORAGE_KEYS.allRecords);
+        if (!storedRecords || storedRecords === 'null') {
+            allRecords = [];
+        } else {
+            allRecords = JSON.parse(storedRecords);
+            if(!Array.isArray(allRecords)) {
+                allRecords = [];
+            }
+        }
+    } catch (error) {
+        console.error('⚠️ Error loading allRecords from localStorage:', error);
+        allRecords = [];
+    }
+    
+    allRecords.push({
+        sessionTime: sessionTime,
+        startTime: new Date(currentStartTime).getTime(),
+        endTime: new Date(currentEndTime).getTime()
+    });
+
+    // Clear running state
+    isRunning = false;
+    currentStartTime = null;
+    currentEndTime = null;
+
+    // Stop the interval
+    if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+    }
+
+    updateButtonState();
+    updateDisplay();
+    saveState(); // Persist the accumulated time
+
+    console.log(`⏹️ Stopwatch stopped - Session: ${formatTime(sessionTime)}, Total today: ${formatTime(accumulatedTime)}`);
+}
 
 
 /**
-* Get today's date as a string (YYYY-MM-DD format)
-* @returns {string} today's date
+* Handle start/stop button clicks
 */
-function getTodaysDate() {
-    return new Date().toISOString().split('T')[0];
+function handleStartStop() {
+    if (isRunning) {
+        stopStopwatch();
+    } else {
+        startStopwatch();
+    }
 }
 
+/**
+ * Reset the stopwatch completely
+ * Change this to reset the last session or something. We don't want to lose the
+ * accumulated time across days
+ * or reset for our purposes means make sure the display shows the correct accumulated time
+ * for the current date.
+ */
+function resetStopwatch() {
+    // Stop any running timer
+    if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+    }
+
+    // Reset all state
+    isRunning = false;
+    currentStartTime = null;
+    accumulatedTime = 0;
+
+    updateButtonState();
+    updateDisplay();
+    saveState();
+
+    statusDisplay.textContent = 'Reset - Ready to start';
+    console.log('🔄 Stopwatch reset');
+}
+
+
+// ==========================================================================
+// Data Management Functions
+// ==========================================================================
 /**
  * Save current state to localStorage
  */
@@ -146,6 +270,58 @@ function loadState() {
     }
 }
 
+
+// ==========================================================================
+// UI Update Functions
+// ==========================================================================
+
+/**
+ * Start the update interval.
+ * clearInterval() and setInterval() are built-in DOM instance methods
+ */
+function startInterval() {
+    if (intervalId) clearInterval(intervalId);
+    intervalId = setInterval(updateDisplay, displayUpdateInterval);
+}
+
+/**
+ * Update the time display
+ */
+function updateDisplay() {
+    const totalTime = getTotalTime();
+    timerDisplay.textContent = formatTime(totalTime);
+}
+
+/**
+ * Update button states based on current running state
+ */
+function updateButtonState() {
+    if (isRunning) {
+        startStopBtn.textContent = 'Stop';
+        startStopBtn.classList.add('stop');
+        statusDisplay.textContent = 'Timer running...';
+    } else {
+        startStopBtn.textContent = 'Start';
+        startStopBtn.classList.remove('stop');
+        if (accumulatedTime > 0) {
+            statusDisplay.textContent = `Stopped - Total today: ${formatTime(accumulatedTime)}`;
+        } else {
+            statusDisplay.textContent = 'Ready to start';
+        }
+    }
+}
+
+// ==========================================================================
+// Utility Functions
+// ==========================================================================
+/**
+* Get today's date as a string (YYYY-MM-DD format)
+* @returns {string} today's date
+*/
+function getTodaysDate() {
+    return new Date().toISOString().split('T')[0];
+}
+
 /**
  * Format milliseconds into HH:MM:SS display
  * @param {number} ms - milliseconds to format
@@ -178,138 +354,17 @@ function getTotalTime() {
     return total;
 }
 
-/**
- * Update the time display
- */
-function updateDisplay() {
-    const totalTime = getTotalTime();
-    timerDisplay.textContent = formatTime(totalTime);
-}
-
-/**
- * Update button states based on current running state
- */
-function updateButtonState() {
-    if (isRunning) {
-        startStopBtn.textContent = 'Stop';
-        startStopBtn.classList.add('stop');
-        statusDisplay.textContent = 'Timer running...';
-    } else {
-        startStopBtn.textContent = 'Start';
-        startStopBtn.classList.remove('stop');
-        if (accumulatedTime > 0) {
-            statusDisplay.textContent = `Stopped - Total today: ${formatTime(accumulatedTime)}`;
-        } else {
-            statusDisplay.textContent = 'Ready to start';
-        }
-    }
-}
-
-/**
- * Start the update interval
- */
-function startInterval() {
-    if (intervalId) clearInterval(intervalId);
-    intervalId = setInterval(updateDisplay, displayUpdateInterval);
-}
 
 
-/**
-     * Start the stopwatch
-     */
-function startStopwatch() {
-    currentStartTime = Date.now();
-    isRunning = true;
-
-    updateButtonState();
-    startInterval();
-    saveState(); // Persist the start immediately
-
-    console.log('⏱️ Stopwatch started');
-}
-
-/**
- * Stop the stopwatch and accumulate the time
- */
-function stopStopwatch() {
-    if (!isRunning || !currentStartTime) return;
-
-    // Get the end time of the current session
-    currentEndTime = Date.now();
-
-    // Calculate the session time and add to accumulated
-    const sessionTime = currentEndTime - currentStartTime;
-    accumulatedTime += sessionTime;
-
-    // Save and update the allRecords with each session
-    allRecords = localStorage.getItem(STORAGE_KEYS.allRecords);
-    if (!allRecords) {
-        allRecords = [];
-    } else {
-        allRecords = JSON.parse(allRecords);
-        allRecords.push({
-            sessionTime: sessionTime,
-            startTime: new Date(currentStartTime).getTime(),
-            endTime: new Date(currentEndTime).getTime()
-        });
-    }
-
-
-    // Clear running state
-    isRunning = false;
-    currentStartTime = null;
-    currentEndTime = null;
-
-    // Stop the interval
-    if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-    }
-
-    updateButtonState();
-    updateDisplay();
-    saveState(); // Persist the accumulated time
-
-    console.log(`⏹️ Stopwatch stopped - Session: ${formatTime(sessionTime)}, Total today: ${formatTime(accumulatedTime)}`);
-}
-
-/**
- * Reset the stopwatch completely
- * Change this to reset the last session or something. We don't want to lose the
- * accumulated time across days
- * or reset for our purposes means make sure the display shows the correct accumulated time
- * for the current date.
- */
-function resetStopwatch() {
-    // Stop any running timer
-    if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-    }
-
-    // Reset all state
-    isRunning = false;
-    currentStartTime = null;
-    accumulatedTime = 0;
-
-    updateButtonState();
-    updateDisplay();
-    saveState();
-
-    statusDisplay.textContent = 'Reset - Ready to start';
-    console.log('🔄 Stopwatch reset');
-}
-
-/**
-* Handle start/stop button clicks
-*/
-function handleStartStop() {
-    if (isRunning) {
-        stopStopwatch();
-    } else {
-        startStopwatch();
-    }
-}
+// ==========================================================================
+// Error Handling
+// ==========================================================================
+// ==========================================================================
+// Service Worker Registration
+// ==========================================================================
+// ==========================================================================
+// Page Visibility Handling
+// ==========================================================================
 
 /**
  * Handle page visibility changes to prevent timer drift
@@ -329,68 +384,3 @@ function handleVisibilityChange() {
         }
     }
 }
-
-
-// Set up event listeners
-startStopBtn.addEventListener("click", handleStartStop);
-resetBtn.addEventListener('click', resetStopwatch);
-
-// Optional: Add mobile touch event listeners?
-
-// Handle page visibility changes (mobile apps, tab switching)
-document.addEventListener('visibilitychange', handleVisibilityChange);
-
-// Save state when page is about to unload
-window.addEventListener('beforeunload', () => {
-    if (isRunning) {
-        saveState();
-        console.log('💾 Saving state before page unload');
-    }
-});
-
-// Optional: Keyboard support
-document.addEventListener('keydown', function (event) {
-    if (event.code === 'Space') {
-        event.preventDefault();
-        handleStartStop();
-    } else if (event.code === 'KeyR') {
-        event.preventDefault();
-        resetStopwatch();
-    }
-});
-
-
-// ==========================================================================
-// Application Initialization
-// ==========================================================================
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Persistent Stopwatch loading...');    
-    // Get DOM element references
-    // Initialize event listeners
-    // Load saved state from localStorage
-    loadState();
-    updateButtonState();
-    updateDisplay();
-    // Register service worker
-    // Set up page visibility handling
-    console.log('✅ Stopwatch ready! Space = start/stop, R = reset');
-});
-
-
-
-
-
-// Initialize the timer variable
-// startTimer function - records the start time in unix time and updates the display each second. if something happens to the app we can use the saved start time to pick up where we left off start/stop event. How to handle crashes/missing stops?
-// also continues to add on to the displayed time on subsequent starts.
-// stopTimer function - stops the timer and saves the current time
-// stopTimer or another saving function should also save the time if the 'app' is closed or refreshed to avoid losing data. Or we just keep counting until we get a stop event.
-// have a widget that can be used to start/stop the timer and display the current time from the homescreen
-// eventully have a create entry/past entry editor to help recover from missed start/stop events.
-// have a stats display that shows metrics with an advanced view for more detailed stats
-// have a message display that shows the last actions, scrollable, consider storing as message history later
-// actions can be started at, stopped at, saved at, something like that
-// Feature: Handle timezones in allRecords
-// Prevent double click zoom
-// Allow allRecords to persist across sessions and refreshes
-

@@ -7,14 +7,36 @@ const STORAGE_KEYS = {
     allRecords: 'stopwatch_allRecords'
 }
 
+// example session record structure
+// session_record = {
+//   id: number,           // Unique identifier (timestamp)
+//   sessionTime: number,     // Milliseconds - calculated field
+//   startTime: string,    
+//   endTime: string,      // UTC - null if ongoing
+//   isComplete: boolean,  // true = normal session, false = incomplete/error
+//   flags: {
+//     crossesMidnight: boolean,    // Session spans multiple days
+//     longDuration: boolean,       // Session > 24 hours (likely error)
+//     interrupted: boolean         // App was closed/crashed during session
+//   },
+//   metadata: {
+//     deviceTimezone: string,      // User's timezone when session started
+//     appVersion: string           // For future compatibility
+//   }
+// }
+
 // State variables
 let currentStartTime = null;
 let currentEndTime = null;
+
+// if the app starts and sets isRunning to false, how will that 
+let sessionId = null; // Unique session ID for the current run
 let isRunning = false;
 let accumulatedTime = 0; // Total time today in milliseconds
 let intervalId = null;
 let displayUpdateInterval = 1000; // Update every 100 ms
 let allRecords = []; // Store all records
+let currentAppVersion = '0.1.0'; // Placeholder for future versioning
 
 // DOM element references - declare globally but initialize after DOM loads
 let timerDisplay;
@@ -81,12 +103,14 @@ document.addEventListener('DOMContentLoaded', () => {
      * Start the stopwatch
      */
 function startStopwatch() {
-    currentStartTime = Date.now();
+    sessionId = Date.now(); // Unique session ID based on timestamp
+    currentStartTime = new Date(sessionId); // Use sessionId as start time
     isRunning = true;
+
+    saveState(); // Persist the start immediately
 
     updateButtonState();
     startInterval();
-    saveState(); // Persist the start immediately
 
     console.log('⏱️ Stopwatch started');
 }
@@ -101,27 +125,29 @@ function stopStopwatch() {
     currentEndTime = Date.now();
     const sessionTime = currentEndTime - currentStartTime;
     accumulatedTime += sessionTime;
+    const currentComplete = true; // Assume session completed successfully
 
     // Save and update the allRecords with each session
-    try {
-        const storedRecords = localStorage.getItem(STORAGE_KEYS.allRecords);
-        if (!storedRecords || storedRecords === 'null') {
-            allRecords = [];
-        } else {
-            allRecords = JSON.parse(storedRecords);
-            if(!Array.isArray(allRecords)) {
-                allRecords = [];
-            }
-        }
-    } catch (error) {
-        console.error('⚠️ Error loading allRecords from localStorage:', error);
-        allRecords = [];
-    }
+    loadAllRecordsFromStorage();
     
+    // this should be a current_session object that I'm pushing.
     allRecords.push({
+        id: sessionId,
         sessionTime: sessionTime,
         startTime: new Date(currentStartTime).getTime(),
-        endTime: new Date(currentEndTime).getTime()
+        endTime: new Date(currentEndTime).getTime(),
+        isoStartTime: new Date(currentStartTime).toISOString(),
+        isoEndTime: currentEndTime ? new Date(currentEndTime).toISOString() : null,
+        isComplete: new Boolean(currentComplete),
+        flags: {
+            crossesMidnight: false, // TODO: Implement logic to check if session crosses midnight
+            longDuration: sessionTime > 24 * 60 * 60 * 1000, // More than 24 hours
+            interrupted: false // TODO: Implement logic to check if session was interrupted
+        },
+        metadata: {
+            deviceTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            appVersion: currentAppVersion // Placeholder for future versioning
+        }
     });
 
     // Clear running state
@@ -194,7 +220,36 @@ function saveState() {
         localStorage.setItem(STORAGE_KEYS.currentStartTime, currentStartTime || '');
         localStorage.setItem(STORAGE_KEYS.accumulatedTime, accumulatedTime);
         localStorage.setItem(STORAGE_KEYS.todaysDate, getTodaysDate());
-        localStorage.setItem(STORAGE_KEYS.allRecords, JSON.stringify(allRecords));
+
+        // Check if allRecords is defined and is an array
+        
+        // Check if STORAGE_KEYS.allRecords exists in localStorage
+        loadAllRecordsFromStorage();
+        
+
+
+        // allRecords.push({
+        //     id: sessionId,
+        //     sessionTime: sessionTime,
+        //     startTime: new Date(currentStartTime).getTime(),
+        //     endTime: currentEndTime ? new Date(currentEndTime).getTime() : null,
+        //     isoStartTime: new Date(currentStartTime).toISOString(),
+        //     isoEndTime: currentEndTime ? new Date(currentEndTime).toISOString() : null,
+        //     isComplete: new Boolean(currentComplete),
+        //     flags: {
+        //         crossesMidnight: false, // TODO: Implement logic to check if session crosses midnight
+        //         longDuration: sessionTime > 24 * 60 * 60 * 1000, // More than 24 hours
+        //         interrupted: false // TODO: Implement logic to check if session was interrupted
+        //     },
+        //     metadata: {
+        //         deviceTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        //         appVersion: currentAppVersion // Placeholder for future versioning
+        //     }
+        // });        
+        
+        // localStorage.setItem(STORAGE_KEYS.allRecords, JSON.stringify(allRecords));
+
+
 
         console.log('💾 State saved to localStorage');
     } catch (error) {
@@ -204,29 +259,15 @@ function saveState() {
 
 /**
  * Load state from localStorage and handle recovery scenarios
- * Get this working and then add a day accumulator and total accumulator or save 
- * the each date's time in a list to localStorage.
  */
 function loadState() {
     try {
-        const savedDate = localStorage.getItem(STORAGE_KEYS.todaysDate);
-        const todaysDate = getTodaysDate();
-
-        // If it's a new day, reset accumulated time
-        if (savedDate !== todaysDate) {
-            console.log('🌅 New day detected - resetting daily accumulated time');
-        // if timer is running then end session at midnight and start a new one
-            accumulatedTime = 0;
-            currentStartTime = null;  // this should be midnight 12 am
-            isRunning = false;
-            saveState(); // Save the reset state
-            return;
-        }
-
         // Load saved values
         const savedIsRunning = localStorage.getItem(STORAGE_KEYS.isRunning) === 'true';
         const savedStartTime = localStorage.getItem(STORAGE_KEYS.currentStartTime);
         const savedAccumulatedTime = parseInt(localStorage.getItem(STORAGE_KEYS.accumulatedTime) || '0');
+
+        loadAllRecordsFromStorage();
 
         accumulatedTime = savedAccumulatedTime;
 
@@ -237,7 +278,6 @@ function loadState() {
             const timeSinceStart = now - savedStart;
 
             // Sanity check - if more than 24 hours, something's wrong
-            // With daily saves reset to previous day end or somthing like that
             if (timeSinceStart > 24 * 60 * 60 * 1000) {
                 console.log('🚨 Crash recovery: Timer was running too long, resetting');
                 resetStopwatch();
@@ -270,6 +310,23 @@ function loadState() {
     }
 }
 
+
+function loadAllRecordsFromStorage() {
+    try {
+        const storedRecords = localStorage.getItem(STORAGE_KEYS.allRecords);
+        if (!storedRecords || storedRecords === 'null') {
+            allRecords = [];
+        } else {
+            allRecords = JSON.parse(storedRecords);
+            if (!Array.isArray(allRecords)) {
+                allRecords = [];
+            }
+        }
+    } catch (error) {
+        console.error('⚠️ Error loading allRecords from localStorage:', error);
+        allRecords = [];
+    }
+}
 
 // ==========================================================================
 // UI Update Functions
@@ -330,7 +387,8 @@ function getTodaysDate() {
 function formatTime(ms) {
     const totalSeconds = Math.floor(ms / 1000);
     const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor(totalSeconds / 60);
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    const minutes = totalMinutes % 60;
     const seconds = totalSeconds % 60;
     // We don't need milliseconds for this simple timer, but we can include them if needed
     // const milliseconds = Math.floor((ms % 1000) / displayUpdateInterval);

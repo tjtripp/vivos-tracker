@@ -1,16 +1,23 @@
 # Vivos DNA Device Tracking PWA
-
 A Progressive Web App (PWA) to track wear time for a Vivos dental appliance.
 
-# Hosted on GitHub Pages (public):
-- https://tjtripp.github.io/vivos-tracker/
-- If installed to home screen, reinstall the PWA after changes to see updates
+# Dev Notes for WIP
 
-## Dev Notes for WIP
- - diagram states/flow
- - switch to indexedDB for data storage
- - how to 'approximate' widget like functionality
- - [draw.io state diagram](https://app.diagrams.net/#G1LjmWIHFGbhOBomOCT9AVQclbQzsn2rxd#%7B%22pageId%22%3A%22fl5VHqQaEs4XxcpcWQLl%22%7D) (currently private but after cleanup can be public)
+- accumulated time was not in the allRecords array but it was in local storage.
+- all records is getting cleared on page reload? but the accumulated time is still tracking accross pages.  I need all records to persist. Then I can calculate the accumulated time from the allRecords array.
+- don't let the browser zoome in/out so we keep the UI on screen?
+
+
+## States
+[draw.io state diagram](https://app.diagrams.net/#G1LjmWIHFGbhOBomOCT9AVQclbQzsn2rxd#%7B%22pageId%22%3A%22fl5VHqQaEs4XxcpcWQLl%22%7D) 
+
+
+## Widget Approximation
+PWAs don't have access to android apis for widget. 
+Options:
+- [A PWA icon can have long press shortcuts](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/shortcuts) to features
+- when opening from home screen icon toggle the start/stop state?
+- setup a service worker to run in the background and update a badge or notification with a button to toggle the state?
 
 ## Project Overview
 
@@ -21,7 +28,11 @@ This PWA helps users track their Vivos dental appliance wear time with:
 - Mobile-friendly design
 - Weekly statistics and reporting
 
-## Features
+## Features WIP
+
+### Hosted on GitHub Pages (public):
+- https://tjtripp.github.io/vivos-tracker/
+- If installed to home screen, reinstall the PWA after changes to see updates
 
 ### Core Features (Phase 1-3)
 - [x] Start/Stop timer for wear sessions
@@ -31,8 +42,8 @@ This PWA helps users track their Vivos dental appliance wear time with:
 - [ ] Mobile-responsive design
 - [x] PWA installation capability
 
-
 ### Enhanced Features (Phase 4-6)
+- [ ] Switch to indexedDB for data storage
 - [ ] Widget-like functionality (home screen icon)
 - [ ] Weekly statistics and visualization
 - [ ] Data export functionality
@@ -65,7 +76,7 @@ vivos-tracker/
 └── README.md              # This file
 ```
 
-## Development Phases
+## Development Phases [needs updating]
 
 ### Phase 0: Setup & Foundation ✅
 - [x] Project structure created
@@ -107,7 +118,7 @@ vivos-tracker/
 - [ ] Performance optimization
 - [ ] Code refactoring and cleanup
 
-## Getting Started
+## Development Environment
 
 ### Prerequisites
 - Visual Studio Code with Live Server extension
@@ -126,29 +137,6 @@ vivos-tracker/
 3. On your mobile device, navigate to `http://<YOUR_IP>:5500`
 4. Test PWA installation and offline functionality
 
-## Data Storage
-
-The app uses localStorage with these key structures:
-
-- `vivosStartTime`: ISO string of current session start time
-- `vivosHistory`: JSON array of completed wear sessions
-- `isWearing`: Boolean string indicating current wear status
-
-## Widget Approximation
-PWAs don't have access to android apis for widget. 
-Options:
-- [A PWA icon can have long press shortcuts](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/shortcuts) to features
-- when opening from home screen icon toggle the start/stop state?
-- setup a service worker to run in the background and update a badge or notification with a button to toggle the state?
-
-
-## Browser Support
-
-- Chrome/Chromium (recommended)
-- Firefox
-- Safari (iOS 11.3+)
-- Edge
-
 ## Contributing
 
 This is a personal project for medical device tracking. Development follows the phase-based approach outlined in the project guide.
@@ -156,15 +144,3 @@ This is a personal project for medical device tracking. Development follows the 
 ## License
 
 Private project for personal use.
-
-## Version History
-
-- v0.1.0: Initial project structure and file skeletons
-- (Future versions will be added as development progresses)
-
-## Notes
-
-- Keep sessions under 24 hours for data validation
-- App designed for offline-first usage
-- Data is stored locally only (no cloud sync)
-- Focus on simplicity and reliability over advanced features

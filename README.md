@@ -144,3 +144,243 @@ This is a personal project for medical device tracking. Development follows the 
 ## License
 
 Private project for personal use.
+
+---
+
+## Code Analysis & Implementation Plan
+
+### Problems Identified
+
+#### 1. **Critical: allRecords Not Being Persisted to localStorage**
+- **Location**: `app.js`, lines 217-258 (saveState function)
+- **Issue**: The `saveState()` function loads `allRecords` from storage but never saves it back. The line that should persist allRecords is commented out (line 250).
+- **Impact**: Session records are stored in memory during runtime but lost on page refresh/reload
+- **Severity**: HIGH - Data loss issue
+
+#### 2. **allRecords Array Management Issues**
+- **Location**: `app.js`, lines 131-151 (stopStopwatch function)
+- **Issue**: `loadAllRecordsFromStorage()` is called in `stopStopwatch()` before pushing a new record, but there's no corresponding save after the push
+- **Impact**: New session records are added to the in-memory array but not persisted
+- **Severity**: HIGH - Data loss issue
+
+#### 3. **Incorrect Boolean Constructor Usage**
+- **Location**: `app.js`, line 141
+- **Issue**: `isComplete: new Boolean(currentComplete)` creates a Boolean object instead of a primitive
+- **Impact**: Boolean objects always evaluate to true in conditionals, even if wrapping `false`
+- **Severity**: MEDIUM - Logic bug
+- **Fix**: Use `isComplete: Boolean(currentComplete)` or just `isComplete: currentComplete`
+
+#### 4. **Missing Service Worker Implementation**
+- **Location**: `app.js`, line 93; File structure
+- **Issue**: Service worker registration is marked as TODO, and `service-worker.js` file doesn't exist in root directory
+- **Impact**: PWA lacks offline functionality, won't work without network
+- **Severity**: MEDIUM - Missing core PWA feature
+
+#### 5. **Date Reset Logic Not Implemented**
+- **Location**: `app.js`, storage management
+- **Issue**: The app stores `todaysDate` but never checks if a new day has started to reset `accumulatedTime`
+- **Impact**: Daily totals accumulate across multiple days
+- **Severity**: MEDIUM - Incorrect data tracking
+
+#### 6. **Incomplete Error Recovery**
+- **Location**: `app.js`, lines 274-310 (loadState function)
+- **Issue**: Recovery logic handles running timers but doesn't handle incomplete sessions from crashes
+- **Impact**: Crashed/interrupted sessions are not marked or recovered properly
+- **Severity**: LOW-MEDIUM - Data quality issue
+
+#### 7. **Commented Out Code in Critical Functions**
+- **Location**: `app.js`, lines 224-250
+- **Issue**: Large blocks of commented code in the `saveState()` function create confusion
+- **Impact**: Code maintainability and clarity issues
+- **Severity**: LOW - Code quality issue
+
+#### 8. **Inconsistent Date Handling**
+- **Location**: `app.js`, various locations
+- **Issue**: Mix of timestamps (milliseconds), Date objects, and ISO strings without clear patterns
+- **Impact**: Potential timezone and date comparison bugs
+- **Severity**: LOW-MEDIUM - Code quality and potential bugs
+
+#### 9. **Missing Data Visualization and Export Features**
+- **Location**: Overall application
+- **Issue**: Phase 4-6 features listed in README but not implemented (charts, export, streaks)
+- **Impact**: Incomplete feature set
+- **Severity**: LOW - Planned features, not bugs
+
+#### 10. **No Daily History Display**
+- **Location**: `index.html`, `app.js`
+- **Issue**: No UI component to display session history or daily totals
+- **Impact**: Users can't see their historical data
+- **Severity**: MEDIUM - Missing key feature
+
+#### 11. **Incomplete Visibility Change Handling**
+- **Location**: `app.js`, lines 427-444
+- **Issue**: Visibility change handler doesn't verify timer accuracy after returning from background
+- **Impact**: Timer may drift on mobile devices after extended background time
+- **Severity**: LOW - Edge case issue
+
+#### 12. **Missing Input Validation**
+- **Location**: `app.js`, various functions
+- **Issue**: No validation for localStorage data integrity or corrupted state
+- **Impact**: App could crash or behave incorrectly with corrupted localStorage
+- **Severity**: LOW-MEDIUM - Robustness issue
+
+---
+
+### Implementation Plan
+
+#### **Phase 1: Critical Bug Fixes (Priority: URGENT)**
+
+1. **Fix allRecords Persistence**
+   - Uncomment and fix line 250 in `saveState()` to persist allRecords
+   - Add `localStorage.setItem(STORAGE_KEYS.allRecords, JSON.stringify(allRecords));` after loading records
+   - Test: Verify records persist across page reloads
+
+2. **Fix Boolean Constructor Bug**
+   - Replace `new Boolean(currentComplete)` with `currentComplete` or `Boolean(currentComplete)`
+   - Test: Verify isComplete field stores correctly
+
+3. **Implement Date Reset Logic**
+   - Add date comparison in `loadState()` to check if it's a new day
+   - Reset `accumulatedTime` to 0 when a new day is detected
+   - Update `todaysDate` in localStorage
+   - Test: Verify accumulated time resets at midnight
+
+#### **Phase 2: Data Management Improvements (Priority: HIGH)**
+
+4. **Improve Session Recovery**
+   - Enhance crash recovery to mark interrupted sessions in flags
+   - Add logic to handle sessions that span midnight (crossesMidnight flag)
+   - Implement longDuration flag checking and user warning
+   - Test: Simulate crashes and verify recovery
+
+5. **Add Data Validation**
+   - Add try-catch blocks with fallback to default state
+   - Validate localStorage data structure before using
+   - Add migration logic for future version changes
+   - Test: Corrupt localStorage and verify graceful handling
+
+6. **Refactor Date Handling**
+   - Standardize on ISO strings for storage, milliseconds for calculations
+   - Create utility functions for date conversions
+   - Document timezone handling approach
+   - Test: Verify dates handle timezone changes
+
+#### **Phase 3: UI/UX Enhancements (Priority: MEDIUM)**
+
+7. **Add Session History Display**
+   - Create HTML section for displaying session history
+   - Add JavaScript to render allRecords in reverse chronological order
+   - Style the history list with CSS
+   - Add date grouping for sessions
+   - Test: Verify history displays correctly with multiple sessions
+
+8. **Add Daily Summary Display**
+   - Create UI component showing daily total
+   - Calculate and display today's accumulated time from allRecords
+   - Add visual indicator for daily goal (if applicable)
+   - Test: Verify daily totals match recorded sessions
+
+9. **Remove Commented Code**
+   - Clean up commented code blocks in saveState()
+   - Add clear comments explaining the logic flow
+   - Document why allRecords is loaded then saved
+   - Code review: Verify no functional code was removed
+
+#### **Phase 4: Service Worker Implementation (Priority: MEDIUM)**
+
+10. **Create Service Worker**
+    - Create `service-worker.js` file in root directory
+    - Implement basic caching strategy for offline support
+    - Add install, activate, and fetch event listeners
+    - Register service worker in app.js (line 93)
+    - Test: Verify app works offline
+
+11. **Add Update Mechanism**
+    - Implement service worker update detection
+    - Add UI notification for available updates
+    - Handle cache versioning
+    - Test: Verify updates work correctly
+
+#### **Phase 5: Advanced Features (Priority: LOW)**
+
+12. **Add Data Export**
+    - Create export button in UI
+    - Implement JSON export of allRecords
+    - Add CSV export option
+    - Include date range filtering
+    - Test: Verify exported data is complete and valid
+
+13. **Implement Data Visualization**
+    - Choose charting library (Chart.js or similar)
+    - Create weekly statistics calculation
+    - Add bar chart or line graph for wear time trends
+    - Style the visualization section
+    - Test: Verify charts display accurate data
+
+14. **Add Streak Tracking**
+    - Implement consecutive days calculation
+    - Add streak display in UI
+    - Store streak data in localStorage
+    - Add streak reset logic
+    - Test: Verify streaks calculate correctly
+
+#### **Phase 6: Polish & Optimization (Priority: LOW)**
+
+15. **Performance Optimization**
+    - Minimize localStorage read/write operations
+    - Consider moving to IndexedDB for large datasets
+    - Optimize display update frequency
+    - Add debouncing where appropriate
+    - Test: Measure and verify performance improvements
+
+16. **Enhanced Error Handling**
+    - Add user-friendly error messages
+    - Implement toast notifications for events
+    - Add confirmation dialogs for destructive actions
+    - Log errors to help with debugging
+    - Test: Verify all error paths display appropriately
+
+17. **Accessibility Improvements**
+    - Add ARIA labels to buttons and displays
+    - Ensure keyboard navigation works
+    - Test with screen readers
+    - Verify color contrast ratios
+    - Test: Run accessibility audit
+
+---
+
+### Testing Checklist
+
+- [ ] Unit tests for data management functions
+- [ ] Integration tests for timer functionality
+- [ ] localStorage persistence tests
+- [ ] Service worker caching tests
+- [ ] Cross-browser compatibility (Chrome, Firefox, Safari, Edge)
+- [ ] Mobile device testing (iOS, Android)
+- [ ] Offline functionality testing
+- [ ] Long-running session testing (>24 hours)
+- [ ] Midnight rollover testing
+- [ ] Crash recovery testing
+- [ ] PWA installation testing
+
+---
+
+### Deployment Notes
+
+- Current deployment: GitHub Pages at https://tjtripp.github.io/vivos-tracker/
+- PWA must be reinstalled after updates to see changes
+- Consider adding update notification system
+- Document update process for users
+
+---
+
+### Future Enhancements (Post-MVP)
+
+- Push notifications for wear reminders
+- Cloud backup/sync across devices
+- Goal setting and achievement tracking
+- Customizable wear time targets
+- Integration with health apps
+- Multi-device support
+- Dark/light theme toggle
+- Localization for multiple languages
